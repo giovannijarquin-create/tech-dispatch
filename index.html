@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Cherokee Tech Dispatch</title>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Dispatch" />
+<meta name="theme-color" content="#14181A" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%2314181A'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='sans-serif' font-weight='bold' fill='%23E8A33D'>D</text></svg>" />
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  html, body { margin:0; padding:0; min-height:100%; background:#F1F3F2;
+               -webkit-text-size-adjust:100%; }
+  #root { min-height:100vh; }
+  #boot { font-family:system-ui,sans-serif; color:#6B7472; padding:28px; font-size:14px; }
+</style>
+</head>
+<body>
+<div id="root"><div id="boot">Loading dispatch&hellip;</div></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useMemo } = React;
+
+/* ------------------------------------------------------------------ *
+ *  DEPOT + STOP DATA
+ * ------------------------------------------------------------------ */
+
+const DEPOT = {
+  name: "Tech Warehouse",
+  addr: "1010 Keeter Rd, Canton, GA 30114",
+  lat: 34.1870622,
+  lng: -84.5209200,
+};
+
+const STOPS = [
+  // ---------------- MONDAY / THURSDAY ----------------
+  { id: "chs",      name: "CHS",                 day: "Mon/Thu", block: 1, addr: "1500 Dr. Martin Luther King Jr. Blvd, Canton", lat: 34.2583894, lng: -84.4789091 },
+  { id: "active",   name: "ACTIVE Academies",    day: "Mon/Thu", block: 1, addr: "8871 Knox Bridge Hwy, Canton",      lat: 34.2160753, lng: -84.5209403 },
+  { id: "freedom",  name: "Freedom MS",          day: "Mon/Thu", block: 1, addr: "10550 Bells Ferry Rd, Canton",      lat: 34.1932890, lng: -84.5334859 },
+  { id: "teasley",  name: "Teasley MS",          day: "Mon/Thu", block: 1, addr: "151 Hickory Log Dr, Canton",        lat: 34.2618480, lng: -84.4824480 },
+  { id: "clayton",  name: "Clayton ES",          day: "Mon/Thu", block: 1, addr: "221 Upper Burris Rd, Canton",       lat: 34.3326301, lng: -84.4897613 },
+  { id: "hasty",    name: "Hasty ES",            day: "Mon/Thu", block: 1, addr: "205 Brown Industrial Pkwy, Canton", lat: 34.2389925, lng: -84.4727069 },
+  { id: "knox",     name: "Knox ES",             day: "Mon/Thu", block: 1, addr: "151 Riverbend Way, Canton",         lat: 34.2159837, lng: -84.5324158 },
+  { id: "liberty",  name: "Liberty ES",          day: "Mon/Thu", block: 1, addr: "10500 Bells Ferry Rd, Canton",      lat: 34.1910036, lng: -84.5348325 },
+  { id: "rmmoore",  name: "R.M. Moore ES",       day: "Mon/Thu", block: 1, addr: "1375 Puckett Rd, Waleska",          lat: 34.3388555, lng: -84.5295602 },
+  { id: "bunche",   name: "Ralph Bunche",        day: "Mon/Thu", block: 1, addr: "400 Belletta Dr, Canton",           lat: 34.2602902, lng: -84.4890147 },
+  { id: "esf",      name: "ESF",                 day: "Mon/Thu", block: 1, addr: "1205 Bluffs Pkwy, Canton",             lat: 34.2744624, lng: -84.4684543 },
+
+  { id: "shs",      name: "SHS",                 day: "Mon/Thu", block: 2, addr: "4485 Hickory Rd, Canton",           lat: 34.1717902, lng: -84.4296416 },
+  { id: "deanrusk", name: "Dean Rusk MS",        day: "Mon/Thu", block: 2, addr: "2761 E Cherokee Dr, Canton",        lat: 34.1733938, lng: -84.4237216 },
+  { id: "hickflat", name: "Hickory Flat ES",     day: "Mon/Thu", block: 2, addr: "2755 E Cherokee Dr, Canton",        lat: 34.1711409, lng: -84.4237838 },
+  { id: "hollyspr", name: "Holly Springs ES",    day: "Mon/Thu", block: 2, addr: "1965 Hickory Rd, Canton",           lat: 34.1721137, lng: -84.4717497 },
+  { id: "indknoll", name: "Indian Knoll ES",     day: "Mon/Thu", block: 2, addr: "3635 Univeter Rd, Canton",          lat: 34.2006372, lng: -84.4586383 },
+  { id: "tippens",  name: "Tippens Ed Center",   day: "Mon/Thu", block: 2, addr: "2450 Holly Springs Pkwy, Canton",   lat: 34.1771299, lng: -84.5043285 },
+  { id: "transn",   name: "Transportation Shop 2",day: "Mon/Thu", block: 2, addr: "1665 Hickory Rd, Holly Springs",    lat: 34.1724982, lng: -84.4767876 },
+  { id: "support",  name: "Support Services",    day: "Mon/Thu", block: 2, addr: "200 Mountain Brook Ct, Ste D-101, Canton", lat: 34.1787921, lng: -84.5064985 },
+  { id: "warehouse",name: "Central Warehouse",   day: "Mon/Thu", block: 2, addr: "201 Mountain Brook Ct, Canton",      lat: 34.1776428, lng: -84.5060759 },
+  { id: "police",   name: "School Police",       day: "Mon/Thu", block: 2, addr: "201 Mountain Brook Ct, Canton", lat: 34.1776428, lng: -84.5060759 },
+  { id: "nutrition",name: "School Nutrition",    day: "Mon/Thu", block: 2, addr: "135 Mountain Brook Dr, Canton",      lat: 34.1792772, lng: -84.5068236 },
+
+  { id: "creekview",name: "Creekview HS",        day: "Mon/Thu", block: 3, addr: "1550 Owens Store Rd, Canton",       lat: 34.2363496, lng: -84.3363253 },
+  { id: "creekland",name: "Creekland MS",        day: "Mon/Thu", block: 3, addr: "1555 Owens Store Rd, Canton",       lat: 34.2360419, lng: -84.3334088 },
+  { id: "avery",    name: "Avery ES",            day: "Mon/Thu", block: 3, addr: "6391 E Cherokee Dr, Canton",        lat: 34.2143714, lng: -84.3946005 },
+  { id: "ballgnd",  name: "Ball Ground ES",      day: "Mon/Thu", block: 3, addr: "321 Valley St, Ball Ground",        lat: 34.3326252, lng: -84.3840197 },
+  { id: "freehome", name: "Free Home ES",        day: "Mon/Thu", block: 3, addr: "8828 Ball Ground Rd, Cumming",      lat: 34.2421191, lng: -84.2873731 },
+  { id: "macedonia",name: "Macedonia ES",        day: "Mon/Thu", block: 3, addr: "10370 E Cherokee Dr, Canton",       lat: 34.2489359, lng: -84.3577289 },
+
+  // ---------------- TUESDAY / FRIDAY ----------------
+  { id: "whs",      name: "WHS",                 day: "Tue/Fri", block: 1, addr: "2010 Towne Lake Hills S Dr, Woodstock", lat: 34.1017764, lng: -84.5426837 },
+  { id: "wms",      name: "WMS",                 day: "Tue/Fri", block: 1, addr: "2000 Towne Lake Hills S Dr, Woodstock", lat: 34.1005048, lng: -84.5398808 },
+  { id: "carmel",   name: "Carmel ES",           day: "Tue/Fri", block: 1, addr: "2275 Bascomb Carmel Rd, Woodstock", lat: 34.0968505, lng: -84.5700561 },
+  { id: "sixes",    name: "Sixes ES",            day: "Tue/Fri", block: 1, addr: "20 Ridge Rd, Canton",               lat: 34.1726010, lng: -84.5540033 },
+  { id: "wes",      name: "WES",                 day: "Tue/Fri", block: 1, addr: "230 Rope Mill Rd, Woodstock",       lat: 34.1092986, lng: -84.5210436 },
+
+  { id: "ehs",      name: "EHS / EHS East",      day: "Tue/Fri", block: 2, addr: "6565 Putnam Ford Dr, Woodstock",    lat: 34.1156874, lng: -84.5631510, flag: "East campus at 6500 Putnam Ford — same lot" },
+  { id: "booth",    name: "E.T. Booth MS",       day: "Tue/Fri", block: 2, addr: "6550 Putnam Ford Dr, Woodstock",    lat: 34.1181988, lng: -84.5614595 },
+  { id: "bascomb",  name: "Bascomb ES",          day: "Tue/Fri", block: 2, addr: "1335 Wyngate Pkwy, Woodstock",      lat: 34.1312569, lng: -84.5771239 },
+  { id: "boston",   name: "Boston ES",           day: "Tue/Fri", block: 2, addr: "105 Othello Dr, Woodstock",         lat: 34.1303836, lng: -84.5900430 },
+  { id: "clarkck",  name: "Clark Creek ES",      day: "Tue/Fri", block: 2, addr: "3219 Hunt Rd, Acworth",             lat: 34.0882150, lng: -84.6418128 },
+  { id: "oakgrove", name: "Oak Grove ES",        day: "Tue/Fri", block: 2, addr: "6118 Woodstock Rd, Acworth",        lat: 34.0964505, lng: -84.6120934 },
+  { id: "transs",   name: "Transportation Shop 1",day: "Tue/Fri", block: 2, addr: "135 Parkbrooke Dr, Woodstock",      lat: 34.1135116, lng: -84.5572779 },
+
+  { id: "rrhs",     name: "River Ridge HS",      day: "Tue/Fri", block: 3, addr: "400 Arnold Mill Rd, Woodstock",     lat: 34.1161210, lng: -84.4807106 },
+  { id: "millck",   name: "Mill Creek MS",       day: "Tue/Fri", block: 3, addr: "442 Arnold Mill Rd, Woodstock",     lat: 34.1171412, lng: -84.4790755 },
+  { id: "arnmill",  name: "Arnold Mill ES",      day: "Tue/Fri", block: 3, addr: "710 Arnold Mill Rd, Woodstock",     lat: 34.1078410, lng: -84.4385450 },
+  { id: "johnston", name: "Johnston ES",         day: "Tue/Fri", block: 3, addr: "2031 E Cherokee Dr, Woodstock",     lat: 34.1317376, lng: -84.4935704 },
+  { id: "litriver", name: "Little River ES",     day: "Tue/Fri", block: 3, addr: "3170 N Trickum Rd, Woodstock",      lat: 34.1056230, lng: -84.4739765 },
+  { id: "mtnroad",  name: "Mountain Road ES",    day: "Tue/Fri", block: 3, addr: "615 Mountain Rd, Woodstock",        lat: 34.1392554, lng: -84.4066789 },
+];
+
+const DEVICES = [
+  "Laptop", "Desktop", "Monitor", "Printer",
+  "Tablet", "Charging cart", "Peripherals", "Network gear",
+  "Surplus", "Other",
+];
+
+const DIRS = [
+  { k: "drop",   label: "Drop off", short: "DROP OFF", color: "var(--route)" },
+  { k: "pickup", label: "Pick up",  short: "PICK UP",  color: "var(--stop)" },
+];
+
+/* ------------------------------------------------------------------ *
+ *  ROUTING MATH
+ * ------------------------------------------------------------------ */
+
+const ROAD_FACTOR = 1.3;
+const AVG_MPH = 32;
+const DWELL_BASE = 8;
+const DWELL_PER_ITEM = 0.6;
+const DEPART = 8.5 * 60;
+
+function haversine(a, b) {
+  const R = 3958.8;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const la1 = (a.lat * Math.PI) / 180;
+  const la2 = (b.lat * Math.PI) / 180;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const roadMiles = (a, b) => haversine(a, b) * ROAD_FACTOR;
+
+function tourLength(order, returnHome) {
+  let total = 0, prev = DEPOT;
+  for (const s of order) { total += roadMiles(prev, s); prev = s; }
+  if (returnHome && order.length) total += roadMiles(prev, DEPOT);
+  return total;
+}
+function nearestNeighbour(stops) {
+  const rem = [...stops], order = [];
+  let cur = DEPOT;
+  while (rem.length) {
+    let bi = 0, bd = Infinity;
+    rem.forEach((s, i) => { const d = roadMiles(cur, s); if (d < bd) { bd = d; bi = i; } });
+    cur = rem[bi]; order.push(cur); rem.splice(bi, 1);
+  }
+  return order;
+}
+function twoOpt(order, returnHome) {
+  if (order.length < 4) return order;
+  let best = [...order], bestLen = tourLength(best, returnHome);
+  let improved = true, guard = 0;
+  while (improved && guard < 60) {
+    improved = false; guard++;
+    for (let i = 0; i < best.length - 1; i++) {
+      for (let k = i + 1; k < best.length; k++) {
+        const cand = [...best.slice(0, i), ...best.slice(i, k + 1).reverse(), ...best.slice(k + 1)];
+        const len = tourLength(cand, returnHome);
+        if (len < bestLen - 1e-9) { best = cand; bestLen = len; improved = true; }
+      }
+    }
+  }
+  return best;
+}
+const fmtClock = (mins) => {
+  const m = Math.round(mins);
+  let h = Math.floor(m / 60);
+  const mm = String(m % 60).padStart(2, "0");
+  const ap = h >= 12 ? "PM" : "AM";
+  h = h % 12 === 0 ? 12 : h % 12;
+  return `${h}:${mm} ${ap}`;
+};
+const googleUrl = (legStops, returnHome) => {
+  const pt = (s) => encodeURIComponent(s.addr ? `${s.addr}, GA` : `${s.lat},${s.lng}`);
+  const origin = encodeURIComponent(DEPOT.addr);
+  const dest = returnHome ? origin : pt(legStops[legStops.length - 1]);
+  const mid = returnHome ? legStops : legStops.slice(0, -1);
+  const wp = mid.map(pt).join("%7C");
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${wp ? `&waypoints=${wp}` : ""}&travelmode=driving`;
+};
+
+const appleUrl = (legStops, returnHome) => {
+  const pt = (s) => encodeURIComponent(s.addr ? `${s.addr}, GA` : `${s.lat},${s.lng}`);
+  const saddr = encodeURIComponent(DEPOT.addr);
+  const daddrs = legStops.map(pt);
+  if (returnHome) daddrs.push(saddr);
+  return `https://maps.apple.com/?saddr=${saddr}&daddr=${daddrs.join("+to:")}&dirflg=d`;
+};
+
+// Stops per map link. Google's directions URL reliably handles ~9 waypoints;
+// Apple's scheme takes more. Returning home consumes one slot on Google.
+const linkCap = (provider, returnHome) =>
+  provider === "apple" ? 15 : returnHome ? 9 : 10;
+
+/* ------------------------------------------------------------------ *
+ *  UI
+ * ------------------------------------------------------------------ */
+
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.dsp { --paper:#F1F3F2; --ink:#14181A; --dim:#6B7472; --line:#D2D7D5;
+       --amber:#E8A33D; --route:#1B4D89; --go:#2F7D52; --stop:#B3382C;
+       background:var(--paper); color:var(--ink); font-family:'Barlow',sans-serif;
+       padding:18px; min-height:100%; }
+.dsp *, .dsp *::before, .dsp *::after { box-sizing:border-box; }
+.dsp-hd { border-bottom:3px solid var(--ink); padding-bottom:12px; margin-bottom:18px; }
+.dsp-ttl { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:30px;
+           letter-spacing:.04em; text-transform:uppercase; line-height:1; margin:0; }
+.dsp-sub { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--dim); margin-top:6px; }
+.dsp-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+@media (max-width:820px){ .dsp-grid{ grid-template-columns:1fr; } }
+.dsp-lbl { font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:12px;
+           letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; }
+.dsp-days { display:flex; border:2px solid var(--ink); margin-bottom:14px; }
+.dsp-day { flex:1; padding:12px 4px; background:transparent; border:0; cursor:pointer;
+           font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:16px;
+           letter-spacing:.08em; text-transform:uppercase; color:var(--ink); }
+.dsp-day[aria-pressed="true"] { background:var(--ink); color:var(--paper); }
+.dsp-day:focus-visible { outline:3px solid var(--amber); outline-offset:2px; }
+.dsp-tools { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+.dsp-mini { font-size:12.5px; font-weight:600; padding:8px 12px; border:1px solid var(--line);
+            background:#fff; cursor:pointer; color:var(--dim); font-family:'Barlow',sans-serif; }
+.dsp-mini:hover { border-color:var(--ink); color:var(--ink); }
+.dsp-blk { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em;
+           color:var(--dim); margin:14px 0 6px; text-transform:uppercase; }
+.dsp-item { background:#fff; border:1px solid var(--line); margin-bottom:5px; }
+.dsp-item.on { border-color:var(--ink); border-left:4px solid var(--route); }
+.dsp-row { display:flex; align-items:flex-start; gap:10px; padding:11px 10px; cursor:pointer; }
+.dsp-row.off { opacity:.5; cursor:not-allowed; background:#EAECEB; }
+.dsp-row input[type=checkbox] { margin-top:2px; accent-color:var(--route);
+                                width:20px; height:20px; flex:none; }
+.dsp-nm { font-weight:600; font-size:14.5px; line-height:1.25; display:block; }
+.dsp-ad { font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--dim);
+          margin-top:1px; display:block; }
+.dsp-warn { font-size:10.5px; color:var(--stop); margin-top:2px; font-weight:500; display:block; }
+.dsp-job { border-top:1px solid var(--line); padding:10px; background:#FAFBFB; }
+.dsp-iline { border:1px solid var(--line); margin-bottom:7px; background:#fff; }
+.dsp-idir { display:flex; border-bottom:1px solid var(--line); }
+.dsp-dbtn { flex:1; padding:9px 2px; border:0; background:#fff; cursor:pointer;
+            font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px;
+            letter-spacing:.06em; text-transform:uppercase; color:var(--dim); }
+.dsp-dbtn[aria-pressed="true"] { color:#fff; }
+.dsp-dbtn:focus-visible { outline:2px solid var(--amber); outline-offset:-2px; }
+.dsp-line { display:flex; gap:6px; padding:7px; align-items:center; }
+.dsp-sel { flex:1; padding:9px; border:1px solid var(--line); background:#fff; font-size:13px;
+           font-family:'Barlow',sans-serif; min-width:0; }
+.dsp-qty { width:64px; padding:9px; border:1px solid var(--line); background:#fff;
+           font-family:'IBM Plex Mono',monospace; font-size:13px; text-align:center; }
+.dsp-x { width:38px; padding:9px 0; border:1px solid var(--line); background:#fff;
+         cursor:pointer; color:var(--stop); font-weight:700; font-size:15px; flex:none; }
+.dsp-add { width:100%; padding:9px; border:1px dashed var(--line); background:transparent;
+           cursor:pointer; color:var(--dim); font-size:12.5px; font-weight:600;
+           font-family:'Barlow',sans-serif; }
+.dsp-add:hover { border-color:var(--route); color:var(--route); }
+.dsp-go { width:100%; margin-top:16px; padding:15px; background:var(--ink); color:var(--paper);
+          border:0; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-weight:700;
+          font-size:18px; letter-spacing:.1em; text-transform:uppercase; }
+.dsp-go:disabled { background:var(--line); color:var(--dim); cursor:not-allowed; }
+.dsp-go:focus-visible { outline:3px solid var(--amber); outline-offset:2px; }
+.dsp-card { background:#fff; border:1px solid var(--line); padding:14px; }
+.dsp-stat { display:flex; gap:16px; padding-bottom:12px; border-bottom:1px solid var(--line);
+            margin-bottom:12px; flex-wrap:wrap; }
+.dsp-sv { font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:19px; }
+.dsp-sl { font-family:'Barlow Condensed',sans-serif; font-size:10px; letter-spacing:.12em;
+          text-transform:uppercase; color:var(--dim); }
+.dsp-load { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.dsp-chip { font-family:'IBM Plex Mono',monospace; font-size:11px; padding:5px 9px;
+            border:1px solid var(--line); font-weight:600; }
+.dsp-strip { position:relative; padding-left:74px; }
+.dsp-strip::before { content:''; position:absolute; left:56px; top:8px; bottom:8px;
+                     width:2px; background:var(--line); }
+.dsp-leg { position:relative; padding:8px 0; }
+.dsp-mi { position:absolute; left:-74px; top:10px; width:48px; text-align:right;
+          font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--dim); }
+.dsp-dot { position:absolute; left:-20px; top:11px; width:13px; height:13px; border-radius:50%;
+           background:var(--route); border:2px solid #fff; box-shadow:0 0 0 1.5px var(--route); }
+.dsp-dot.home { background:var(--amber); box-shadow:0 0 0 1.5px var(--amber); }
+.dsp-dot.pickup { background:var(--stop); box-shadow:0 0 0 1.5px var(--stop); }
+.dsp-dot.both { background:var(--amber); box-shadow:0 0 0 1.5px var(--amber); }
+.dsp-sn { font-weight:600; font-size:14.5px; }
+.dsp-meta { font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--dim); }
+.dsp-eta { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--go); font-weight:600; }
+.dsp-man { margin-top:4px; padding:6px 8px; background:#F6F8F7; border-left:2px solid var(--line);
+           font-size:12px; }
+.dsp-mline { display:flex; justify-content:space-between; gap:8px; padding:2px 0; align-items:center; }
+.dsp-itag { display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700;
+            letter-spacing:.05em; padding:1px 5px; color:#fff; margin-right:7px; min-width:56px;
+            text-align:center; }
+.dsp-lnk { display:inline-block; margin-top:12px; padding:11px 15px; background:var(--route);
+           color:#fff; text-decoration:none; font-weight:600; font-size:13.5px; }
+.dsp-lnk:hover { background:#123963; }
+.dsp-prov { display:flex; border:1px solid var(--line); margin-bottom:4px; }
+.dsp-pbtn { flex:1; padding:11px 4px; border:0; background:#fff; cursor:pointer;
+            font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px;
+            letter-spacing:.06em; text-transform:uppercase; color:var(--dim); }
+.dsp-pbtn[aria-pressed="true"] { background:var(--ink); color:#fff; }
+.dsp-pbtn:focus-visible { outline:2px solid var(--amber); outline-offset:-2px; }
+.dsp-hint { margin-top:8px; padding:8px 10px; background:#FBF3E4; border-left:3px solid var(--amber);
+            font-size:11.5px; color:#7A5A22; line-height:1.45; }
+.dsp-empty { padding:34px 14px; text-align:center; color:var(--dim); font-size:13.5px;
+             border:2px dashed var(--line); }
+.dsp-note { margin-top:14px; padding:10px 12px; background:#fff; border-left:3px solid var(--amber);
+            font-size:11.5px; color:var(--dim); line-height:1.5; }
+`;
+
+function CherokeeDispatch() {
+  const todayIdx = new Date().getDay();
+  const guessDay = [1, 4].includes(todayIdx) ? "Mon/Thu" : "Tue/Fri";
+
+  const [day, setDay] = useState(guessDay);
+  const [jobs, setJobs] = useState({});
+  const [returnHome, setReturnHome] = useState(true);
+  const [mapProvider, setMapProvider] = useState("google");
+  const [route, setRoute] = useState(null);
+
+  const dayStops = useMemo(() => STOPS.filter((s) => s.day === day), [day]);
+  const chosen = useMemo(
+    () => dayStops.filter((s) => jobs[s.id] && s.lat != null),
+    [dayStops, jobs]
+  );
+
+  const toggle = (s) => {
+    if (s.lat == null) return;
+    setJobs((j) => {
+      const n = { ...j };
+      if (n[s.id]) delete n[s.id];
+      else n[s.id] = { items: [{ type: DEVICES[0], qty: 1, dir: "drop" }] };
+      return n;
+    });
+    setRoute(null);
+  };
+  const setItem = (id, i, patch) => {
+    setJobs((j) => {
+      const items = j[id].items.map((it, k) => (k === i ? { ...it, ...patch } : it));
+      return { ...j, [id]: { ...j[id], items } };
+    });
+    setRoute(null);
+  };
+  const addItem = (id) => {
+    setJobs((j) => ({
+      ...j,
+      [id]: { ...j[id], items: [...j[id].items, { type: DEVICES[0], qty: 1, dir: "drop" }] },
+    }));
+    setRoute(null);
+  };
+  const delItem = (id, i) => {
+    setJobs((j) => {
+      const items = j[id].items.filter((_, k) => k !== i);
+      return { ...j, [id]: { ...j[id], items: items.length ? items : [{ type: DEVICES[0], qty: 1, dir: "drop" }] } };
+    });
+    setRoute(null);
+  };
+
+  const build = () => {
+    if (!chosen.length) return;
+    const order = twoOpt(nearestNeighbour(chosen), returnHome);
+    let clock = DEPART, cum = 0, prev = DEPOT;
+    const legs = order.map((s) => {
+      const job = jobs[s.id];
+      const count = job.items.reduce((a, it) => a + (Number(it.qty) || 0), 0);
+      const mi = roadMiles(prev, s);
+      cum += mi;
+      clock += (mi / AVG_MPH) * 60;
+      const eta = clock;
+      clock += DWELL_BASE + count * DWELL_PER_ITEM;
+      prev = s;
+      return { stop: s, job, count, mi, cum, eta };
+    });
+    let back = null;
+    if (returnHome) {
+      const mi = roadMiles(prev, DEPOT);
+      cum += mi;
+      clock += (mi / AVG_MPH) * 60;
+      back = { mi, cum, eta: clock };
+    }
+    setRoute({ legs, back, total: cum, finish: clock });
+  };
+
+  const clearAll = () => { setJobs({}); setRoute(null); };
+
+  const load = useMemo(() => {
+    const out = {}, back = {};
+    chosen.forEach((s) => {
+      jobs[s.id].items.forEach((it) => {
+        const q = Number(it.qty) || 0;
+        if (it.dir === "drop") out[it.type] = (out[it.type] || 0) + q;
+        else back[it.type] = (back[it.type] || 0) + q;
+      });
+    });
+    const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+    return { out, back, outN: sum(out), backN: sum(back) };
+  }, [chosen, jobs]);
+
+  const nUnrouted = dayStops.filter((s) => s.lat == null).length;
+
+  const cap = linkCap(mapProvider, returnHome);
+  const chunks = [];
+  if (route) {
+    for (let i = 0; i < route.legs.length; i += cap)
+      chunks.push(route.legs.slice(i, i + cap).map((l) => l.stop));
+  }
+
+  return (
+    <div className="dsp">
+      <style>{CSS}</style>
+
+      <div className="dsp-hd">
+        <h1 className="dsp-ttl">Cherokee Tech Dispatch</h1>
+        <div className="dsp-sub">DEPART {DEPOT.addr.toUpperCase()} — 8:30 AM</div>
+      </div>
+
+      <div className="dsp-grid">
+        {/* ---------- LEFT ---------- */}
+        <div>
+          <div className="dsp-lbl">1 — Which day</div>
+          <div className="dsp-days">
+            {["Mon/Thu", "Tue/Fri"].map((d) => (
+              <button key={d} className="dsp-day" aria-pressed={day === d}
+                      onClick={() => { setDay(d); setRoute(null); }}>
+                {d}
+              </button>
+            ))}
+          </div>
+
+          <div className="dsp-lbl">2 — Who called in, and what for</div>
+          <div className="dsp-tools">
+            <button className="dsp-mini" onClick={clearAll}>Clear all</button>
+            <label className="dsp-mini" style={{ display: "flex", gap: 7, alignItems: "center" }}>
+              <input type="checkbox" checked={returnHome} style={{ width: 17, height: 17 }}
+                     onChange={(e) => { setReturnHome(e.target.checked); setRoute(null); }} />
+              Return to warehouse
+            </label>
+          </div>
+
+          {[1, 2, 3].map((b) => {
+            const rows = dayStops.filter((s) => s.block === b);
+            if (!rows.length) return null;
+            return (
+              <div key={b}>
+                <div className="dsp-blk">— Schedule block {b} —</div>
+                {rows.map((s) => {
+                  const job = jobs[s.id];
+                  return (
+                    <div key={s.id} className={`dsp-item${job ? " on" : ""}`}>
+                      <label className={`dsp-row${s.lat == null ? " off" : ""}`}>
+                        <input type="checkbox" checked={!!job} disabled={s.lat == null}
+                               onChange={() => toggle(s)} />
+                        <span>
+                          <span className="dsp-nm">{s.name}</span>
+                          <span className="dsp-ad">
+                            {s.addr || "address needed — send it to me and I'll wire it in"}
+                          </span>
+                          {s.flag && <span className="dsp-warn">{s.flag}</span>}
+                        </span>
+                      </label>
+
+                      {job && (
+                        <div className="dsp-job">
+                          {job.items.map((it, i) => (
+                            <div className="dsp-iline" key={i}>
+                              <div className="dsp-idir">
+                                {DIRS.map((d) => (
+                                  <button key={d.k} className="dsp-dbtn"
+                                          aria-pressed={it.dir === d.k}
+                                          style={it.dir === d.k ? { background: d.color } : undefined}
+                                          onClick={() => setItem(s.id, i, { dir: d.k })}>
+                                    {d.label}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="dsp-line">
+                                <select className="dsp-sel" value={it.type}
+                                        aria-label="Device type"
+                                        onChange={(e) => setItem(s.id, i, { type: e.target.value })}>
+                                  {DEVICES.map((d) => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                                <input className="dsp-qty" type="number" min="1" value={it.qty}
+                                       aria-label="Quantity"
+                                       onChange={(e) => setItem(s.id, i, { qty: e.target.value })} />
+                                <button className="dsp-x" onClick={() => delItem(s.id, i)}
+                                        aria-label="Remove this device line">×</button>
+                              </div>
+                            </div>
+                          ))}
+                          <button className="dsp-add" onClick={() => addItem(s.id)}>
+                            + Add another item
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+
+          <button className="dsp-go" onClick={build} disabled={!chosen.length}>
+            Build itinerary ({chosen.length})
+          </button>
+        </div>
+
+        {/* ---------- RIGHT ---------- */}
+        <div>
+          <div className="dsp-lbl">3 — Your run</div>
+
+          {!route && (
+            <div className="dsp-empty">
+              Tick the stops that called in, set drop off or pick up, and list the
+              devices.<br />I'll order them so you're not doubling back.
+            </div>
+          )}
+
+          {route && (
+            <div className="dsp-card">
+              <div className="dsp-stat">
+                <div><div className="dsp-sv">{route.legs.length}</div><div className="dsp-sl">Stops</div></div>
+                <div><div className="dsp-sv">{route.total.toFixed(1)}</div><div className="dsp-sl">Est. miles</div></div>
+                <div><div className="dsp-sv">{fmtClock(route.finish)}</div><div className="dsp-sl">Est. finish</div></div>
+              </div>
+
+              <div className="dsp-lbl">Load out / load back</div>
+              <div className="dsp-load">
+                <span className="dsp-chip" style={{ borderColor: "var(--route)", color: "var(--route)" }}>
+                  ↑ {load.outN} out
+                </span>
+                <span className="dsp-chip" style={{ borderColor: "var(--stop)", color: "var(--stop)" }}>
+                  ↓ {load.backN} back
+                </span>
+                {Object.entries(load.out).map(([t, q]) => (
+                  <span className="dsp-chip" key={"o" + t}>{t} ×{q} out</span>
+                ))}
+                {Object.entries(load.back).map(([t, q]) => (
+                  <span className="dsp-chip" key={"b" + t}>{t} ×{q} back</span>
+                ))}
+              </div>
+
+              <div className="dsp-strip">
+                <div className="dsp-leg">
+                  <span className="dsp-mi">0.0 mi</span>
+                  <span className="dsp-dot home" />
+                  <div className="dsp-sn">Tech Warehouse</div>
+                  <div className="dsp-meta">
+                    Depart 8:30 AM · load {load.outN} item{load.outN === 1 ? "" : "s"}
+                  </div>
+                </div>
+
+                {route.legs.map((l, i) => {
+                  const hasDrop = l.job.items.some((it) => it.dir === "drop");
+                  const hasPick = l.job.items.some((it) => it.dir === "pickup");
+                  const dotCls = hasDrop && hasPick ? "both" : hasPick ? "pickup" : "";
+                  return (
+                    <div className="dsp-leg" key={l.stop.id}>
+                      <span className="dsp-mi">{l.cum.toFixed(1)} mi</span>
+                      <span className={`dsp-dot ${dotCls}`} />
+                      <div className="dsp-sn">{i + 1}. {l.stop.name}</div>
+                      <div className="dsp-meta">{l.stop.addr}</div>
+                      <div className="dsp-eta">Arrive ~{fmtClock(l.eta)} · {l.mi.toFixed(1)} mi leg</div>
+                      <div className="dsp-man">
+                        {l.job.items.map((it, k) => {
+                          const d = DIRS.find((x) => x.k === it.dir);
+                          return (
+                            <div className="dsp-mline" key={k}>
+                              <span>
+                                <span className="dsp-itag" style={{ background: d.color }}>{d.short}</span>
+                                {it.type}
+                              </span>
+                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600 }}>
+                                ×{it.qty}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {route.back && (
+                  <div className="dsp-leg">
+                    <span className="dsp-mi">{route.back.cum.toFixed(1)} mi</span>
+                    <span className="dsp-dot home" />
+                    <div className="dsp-sn">Back to warehouse</div>
+                    <div className="dsp-eta">
+                      ~{fmtClock(route.back.eta)} · returning {load.backN} item{load.backN === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="dsp-lbl" style={{ marginTop: 14 }}>Open route in</div>
+              <div className="dsp-prov">
+                {[
+                  { k: "google", label: "Google Maps" },
+                  { k: "apple", label: "Apple Maps" },
+                ].map((p) => (
+                  <button key={p.k} className="dsp-pbtn" aria-pressed={mapProvider === p.k}
+                          onClick={() => setMapProvider(p.k)}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
+              {mapProvider === "google" && route.legs.length > cap && (
+                <div className="dsp-hint">
+                  {route.legs.length} stops — Google splits this into {chunks.length} links.
+                  Apple Maps fits up to 15 per link, so this run would open in{" "}
+                  {Math.ceil(route.legs.length / linkCap("apple", returnHome))}.
+                </div>
+              )}
+
+              {chunks.map((c, i) => {
+                const back = returnHome && i === chunks.length - 1;
+                const href = mapProvider === "apple" ? appleUrl(c, back) : googleUrl(c, back);
+                return (
+                  <a key={i} className="dsp-lnk" style={{ marginRight: 8 }}
+                     href={href} target="_blank" rel="noreferrer">
+                    Open in {mapProvider === "apple" ? "Apple" : "Google"} Maps
+                    {chunks.length > 1 ? ` (part ${i + 1} of ${chunks.length})` : ""}
+                  </a>
+                );
+              })}
+
+              <div className="dsp-note">
+                Mileage is straight-line × {ROAD_FACTOR} — good for ordering stops, rough
+                for predicting your day. Stop time assumes {DWELL_BASE} min to park and
+                walk in, plus {DWELL_PER_ITEM} min per device. Adjust once you've driven it.
+                Delivery windows still aren't factored in.
+              </div>
+            </div>
+          )}
+
+          {nUnrouted > 0 && (
+            <div className="dsp-note">
+              {nUnrouted} stop{nUnrouted > 1 ? "s" : ""} on {day} can't be routed yet —
+              no address on file. They're greyed out.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById("root")).render(<CherokeeDispatch />);
+</script>
+</body>
+</html>
